@@ -1,24 +1,27 @@
-// A Text node in the VDom
-type VText = { text: string }
 
-type EventHandler = () => void
+import { impossible } from './util.js';
+
+// A Text node in the VDom
+export type VText = { text: string }
+
+export type EventHandler = () => void
 
 // An attribute list.
-type VAttrs = {[k: string]: string}
-type VEvents = {[k: string]: EventHandler}
+export type VAttrs = {[k: string]: string}
+export type VEvents = {[k: string]: EventHandler}
 
 // An element in the VDom.
-type VElt = {
+export type VElt = {
   tag: string,
   attrs: VAttrs,
   events: VEvents,
   kids: VNode[],
 }
 
-type VNode = VElt | VText
+export type VNode = VElt | VText
 
 // A patch to apply to a node.
-type NodePatch =
+export type NodePatch =
   | { keep: null }
   // Keep the node unchanged
   | { replace: VNode }
@@ -27,7 +30,7 @@ type NodePatch =
   // Apply patches to parts of the node.
 
 // A patch to apply to the children of a node.
-type KidsPatch = {
+export type KidsPatch = {
   common: NodePatch[],
   // Patches to apply to the common prefix of the two nodes.
   drop: number,
@@ -37,13 +40,13 @@ type KidsPatch = {
 }
 
 // A patch to apply to an attribute list.
-type AttrPatch =
+export type AttrPatch =
   | { remove: string }
   // Remove the given attribute
   | { upsert: {key: string, value: string} }
   // update the given attribute, or add it if it does not exist.
 
-type EventPatch =
+export type EventPatch =
   | { removeEvent: string, handler: EventHandler }
   | { addEvent: string, handler: EventHandler }
 
@@ -144,7 +147,7 @@ function diffText(prev: VText, next: VText): NodePatch {
 
 // Convert a VNode into a dom node.
 
-function makeNode(vnode: VNode): ChildNode {
+export function makeNode(vnode: VNode): ChildNode {
   if('tag' in vnode) {
     return E(vnode.tag, vnode.attrs, vnode.events, vnode.kids.map(k => makeNode(k)));
   } else {
@@ -236,7 +239,7 @@ function T(str: string): ChildNode {
 
 // Helpers for generating VNodes
 
-function h(tag: string, attrs: {[k: string]: string | EventHandler}, kids: VNode[]): VNode {
+export function h(tag: string, attrs: {[k: string]: string | EventHandler}, kids: VNode[]): VNode {
   const stringAttrs: VAttrs = {}
   const events: VEvents = {}
   for(const k in attrs) {
@@ -250,54 +253,14 @@ function h(tag: string, attrs: {[k: string]: string | EventHandler}, kids: VNode
   return {tag, attrs: stringAttrs, events, kids}
 }
 
-function text(s: string): VText {
+export function text(s: string): VText {
   return { text: s }
 }
 
-// misc utilities.
-
-function impossible(n: never): never {
-  throw new Error("impossible: " + n)
+export function diff(prev: VNode, next: VNode): NodePatch {
+  return diffNode(prev, next);
 }
 
-// APP
-
-/*
-function render(date: Date) {
-  return h('h1', {}, [text(date.toString())])
+export function patch(node: ChildNode, patch_: NodePatch): ChildNode {
+  return patchNode(node, patch_);
 }
-*/
-
-function app() {
-  let ctr = 0;
-  return (redraw: () => void) => {
-    return h('div', {}, [
-      h('button', { onclick: () => { ctr += 1; redraw(); } }, [text("+")]),
-      text(ctr.toString()),
-      h('button', { onclick: () => { ctr -= 1; redraw(); } }, [text("-")]),
-    ]);
-  }
-}
-
-function runApp(elt: Element) {
-  const render = app();
-  let vdom: VNode;
-  let dom: ChildNode;
-  const redraw = () => {
-    const newVdom = render(redraw);
-    const patch = diffNode(vdom, newVdom);
-    dom = patchNode(dom, patch);
-    vdom = newVdom;
-  };
-  vdom = render(redraw);
-  dom = makeNode(vdom);
-  elt.replaceWith(dom)
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const elt = document.getElementById("app");
-  if(!elt) {
-    throw new Error("did not find app element");
-  }
-  runApp(elt);
-});
