@@ -41,8 +41,6 @@ export class Heap<T> {
   }
 
   _percolate_down(i: number): void {
-    const v = this._items[i];
-
     let j = ileft(i);
     if(j >= this._items.length) {
       return;
