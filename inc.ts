@@ -1,3 +1,4 @@
+import { Heap } from './heap.js';
 
 let nextId = 0;
 
@@ -146,86 +147,13 @@ class Var<T> extends Incr<T> {
   }
 }
 
-function iparent(i: number): number { return (i - 1) >> 1 }
-function ileft(i: number): number { return (i << 1) + 1 }
-function iright(i: number): number { return (i << 1) + 2 }
-function priority<T>(x: Incr<T>): number { return x._height }
-
-class MinHeap<T> {
-  _items: Incr<T>[];
-
-  constructor() {
-    this._items = [];
-  }
-
-  push(item: Incr<T>): void {
-    this._items.push(item);
-    this.percolate_up(this._items.length - 1);
-  }
-
-  pop(): Incr<T> | undefined {
-    const last = this._items.pop();
-    if(last === undefined) {
-      return undefined
-    }
-    const ret = this._items[0];
-    this._items[0] = last;
-    this.percolate_down(0)
-    return ret;
-  }
-
-  percolate_up(i: number): void {
-    if(i === 0) {
-      // At the root; done.
-      return;
-    }
-    const j = iparent(i);
-    if(this.less(i, j)) {
-      this.swap(i, j);
-      this.percolate_up(j);
-    }
-  }
-
-  percolate_down(i: number): void {
-    const v = this._items[i];
-
-    let j = ileft(i);
-    if(j >= this._items.length) {
-      return;
-    };
-    if(this.less(i, j)) {
-      this.swap(i, j);
-      this.percolate_down(j);
-      return;
-    }
-
-    j = iright(i);
-    if(j >= this._items.length) {
-      return;
-    };
-    if(this.less(i, j)) {
-      this.swap(i, j);
-      this.percolate_down(j);
-      return;
-    }
-  }
-
-  less(i: number, j: number): boolean {
-    return this._items[i]._id >= this._items[j]._id
-  }
-
-  swap(i: number, j: number): void {
-    const tmp = this._items[i];
-    this._items[i] = this._items[j];
-    this._items[j] = tmp;
-  }
-}
-
 export class Reactor {
-  _dirty: MinHeap<any>;
+  _dirty: Heap<Incr<any>>;
 
   constructor() {
-    this._dirty = new MinHeap();
+    this._dirty = new Heap((x, y) => {
+      return x._height < y._height
+    });
   }
 
   _add_dirty(incr: Incr<any>) {
