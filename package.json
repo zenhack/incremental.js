@@ -1,0 +1,17 @@
+{
+  "name": "mvd",
+  "version": "1.0.0",
+  "description": "",
+  "main": "mvd.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/mocha": "^8.0.4",
+    "mocha": "^8.2.1"
+  }
+}
