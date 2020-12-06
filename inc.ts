@@ -233,6 +233,7 @@ class Then<T> extends Incr<T> {
 
   _recompute(reactor: Reactor): void {
     const next = this._f(this._prev.value());
+    this._value = next.value();
     if(next === this._last) {
       return
     }
