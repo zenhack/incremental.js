@@ -132,12 +132,13 @@ class Const<T> extends Incr<T> {
 class Var<T> extends Incr<T> {
   _reactor: Reactor;
   _value: T;
+  _modified: boolean;
 
   constructor(reactor: Reactor, value: T) {
     super();
     this._reactor = reactor;
     this._value = value;
-    this._set_dirty(reactor);
+    this._modified = true;
   }
 
   value(): T {
@@ -149,7 +150,20 @@ class Var<T> extends Incr<T> {
       return;
     }
     this._value = value;
-    this._set_dirty(this._reactor);
+    this._modified = true;
+    if(this._active()) {
+      this._set_dirty(this._reactor);
+    }
+  }
+
+  _recompute() {
+    this._modified = false;
+  }
+
+  _activate() {
+    if(this._modified) {
+      this._set_dirty(this._reactor);
+    }
   }
 }
 
