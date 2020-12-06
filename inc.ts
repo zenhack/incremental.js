@@ -234,6 +234,10 @@ class Then<T> extends Incr<T> {
   _recompute(reactor: Reactor): void {
     const next = this._f(this._prev.value());
     this._value = next.value();
+    this._height = Math.max(
+      this._height,
+      Math.max(this._prev._height, next._height) + 1,
+    );
     if(next === this._last) {
       return
     }
@@ -244,9 +248,5 @@ class Then<T> extends Incr<T> {
       next._subscribe(this);
     }
     this._last = next;
-    this._height = Math.max(
-      this._height,
-      Math.max(this._prev._height, next._height) + 1,
-    );
   }
 }
