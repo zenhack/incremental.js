@@ -12,18 +12,22 @@ export class Heap<T> {
     this._before = before;
   }
 
+  empty(): boolean {
+    return this._items.length === 0;
+  }
+
   push(item: T): void {
     this._items.push(item);
     this._percolate_up(this._items.length - 1);
   }
 
-  pop(): T | undefined {
-    const last = this._items.pop();
-    if(last === undefined) {
-      return undefined
+  pop(): T {
+    if(this.empty()) {
+      throw new Error("Empty heap");
     }
     const ret = this._items[0];
-    this._items[0] = last;
+    this._items[0] = this._items[this._items.length - 1];
+    this._items.pop();
     this._percolate_down(0)
     return ret;
   }

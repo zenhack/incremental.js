@@ -80,6 +80,7 @@ class Obs<T> extends Incr<T> {
     this._incr = incr;
     this._incr._subscribe(this);
     this._watchers = [];
+    this._height = this._incr._height + 1;
   }
 
   unobserve(): void {
@@ -95,6 +96,7 @@ class Obs<T> extends Incr<T> {
   }
 
   _recompute(): void {
+    this._height = this._incr._height + 1;
     const v = this.value();
     let new_watchers = [];
     for(let i = 0; i < this._watchers.length; i++) {
@@ -161,12 +163,11 @@ export class Reactor {
   }
 
   stabilize() {
-    let incr = this._dirty.pop();
-    while(incr !== undefined) {
+    while(!this._dirty.empty()) {
+      let incr = this._dirty.pop();
       incr._recompute(this);
       incr._notify(this);
       incr._dirty = false;
-      incr = this._dirty.pop();
     }
   }
 
@@ -217,8 +218,10 @@ class Then<T> extends Incr<T> {
     if(next === this._last) {
       return
     }
-    if(this._last !== null && this._active()) {
-      this._last._unsubscribe(this);
+    if(this._active()) {
+      if(this._last !== null) {
+        this._last._unsubscribe(this);
+      }
       next._subscribe(this);
     }
     this._last = next;
