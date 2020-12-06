@@ -79,24 +79,26 @@ describe("incr", function() {
       assert.equal(last, 6);
     })
   });
-  it("should compute the right value", function() {
-    const r = new Reactor();
-    const x = r.newVar(1);
-    const y = r.newVar(2);
-    const z = x.then(x => y.map(y => x + y))
-    const obs = z.observe();
-    let expected = 3;
-    let seen = 0;
-    obs.watch(actual => {
-      assert.equal(expected, actual)
-      seen++;
-      return true;
+  describe("misc", function() {
+    it("Should compute the right value for a slightly more complicated example", function() {
+      const r = new Reactor();
+      const x = r.newVar(1);
+      const y = r.newVar(2);
+      const z = x.then(x => y.map(y => x + y))
+      const obs = z.observe();
+      let expected = 3;
+      let seen = 0;
+      obs.watch(actual => {
+        assert.equal(expected, actual)
+        seen++;
+        return true;
+      })
+      r.stabilize();
+      assert.equal(seen, 1)
+      x.set(0);
+      expected = 2;
+      r.stabilize();
+      assert.equal(seen, 2)
     })
-    r.stabilize();
-    assert.equal(seen, 1)
-    x.set(0);
-    expected = 2;
-    r.stabilize();
-    assert.equal(seen, 2)
-  })
+  });
 });
