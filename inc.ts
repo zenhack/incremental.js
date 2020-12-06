@@ -26,7 +26,7 @@ class Incr<T> {
   }
 
   map<A>(f: (v: T) => A): Incr<A> {
-    return this.then(x => new Const(f(x)));
+    return this.then(x => just(f(x)));
   }
 
   _subscribe(sub: Incr<any>) {
@@ -111,6 +111,11 @@ class Obs<T> extends Incr<T> {
     }
     this._watchers = new_watchers;
   }
+}
+
+// Convert a plain value into an Incr which never changes.
+export function just<T>(x: T): Incr<T> {
+  return new Const(x);
 }
 
 class Const<T> extends Incr<T> {
