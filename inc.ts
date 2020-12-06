@@ -2,7 +2,7 @@ import { Heap } from './heap.js';
 
 let nextId = 0;
 
-class Incr<T> {
+abstract class Incr<T> {
   _id: number;
   _subscribers: {[k: number]: Incr<any>};
   _rc: number;
@@ -17,9 +17,7 @@ class Incr<T> {
     this._dirty = false;
   }
 
-  value(): T {
-    throw new Error("Not Implemented");
-  }
+  abstract value(): T;
 
   then<A>(f: (v: T) => Incr<A>): Incr<A> {
     return new Then<A>(this, f);
