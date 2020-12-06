@@ -1,4 +1,4 @@
-import { Reactor } from '../inc.js';
+import { Reactor, just } from '../inc.js';
 import * as assert from 'assert';
 
 describe("incr", function() {
@@ -50,6 +50,23 @@ describe("incr", function() {
       r.stabilize();
       assert.equal(last, 8);
     });
+  });
+  describe(".then()", function() {
+    it("should trigger observers", function() {
+      const r = new Reactor();
+      const v = r.newVar(0);
+      let last = 0;
+      v.then(x => just(x + 1)).observe().watch(x => {
+        last = x;
+        return true;
+      })
+      v.set(1);
+      r.stabilize();
+      assert.equal(last, 2);
+      v.set(5);
+      r.stabilize();
+      assert.equal(last, 6);
+    })
   });
   it("should compute the right value", function() {
     const r = new Reactor();
