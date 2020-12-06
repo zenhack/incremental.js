@@ -7,7 +7,7 @@ describe("incr", function() {
       const r = new Reactor();
       const v = r.newVar(0);
       let last = 0;
-      const obs = v.observe().watch(x => {
+      v.observe().watch(x => {
         last = x;
         return true;
       })
@@ -17,6 +17,17 @@ describe("incr", function() {
       v.set(4)
       r.stabilize();
       assert.equal(last, 4);
+    });
+    it("Should trigger at least once.", function() {
+      const r = new Reactor();
+      const v = r.newVar(0);
+      let seen = false;
+      v.observe().watch(_x => {
+        seen = true;
+        return true;
+      });
+      r.stabilize();
+      assert.equal(seen, true);
     });
     it("Should be disabled when they return false", function() {
       const r = new Reactor();

@@ -137,6 +137,7 @@ class Var<T> extends Incr<T> {
     super();
     this._reactor = reactor;
     this._value = value;
+    this._set_dirty(reactor);
   }
 
   value(): T {
