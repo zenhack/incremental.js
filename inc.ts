@@ -93,7 +93,7 @@ class Obs<T> extends Incr<T> {
     this._watchers.push(f)
   }
 
-  _recompute(): void {
+  _recompute(reactor: Reactor): void {
     this._height = this._incr._height + 1;
     const v = this.value();
     let new_watchers = [];
@@ -108,6 +108,7 @@ class Obs<T> extends Incr<T> {
       }
     }
     this._watchers = new_watchers;
+    this._notify(reactor);
   }
 }
 
@@ -126,6 +127,10 @@ class Const<T> extends Incr<T> {
 
   value(): T {
     return this._value;
+  }
+
+  _recompute(reactor: Reactor) {
+    this._notify(reactor);
   }
 }
 
@@ -156,8 +161,9 @@ class Var<T> extends Incr<T> {
     }
   }
 
-  _recompute() {
+  _recompute(reactor: Reactor) {
     this._modified = false;
+    this._notify(reactor);
   }
 
   _activate() {
@@ -184,7 +190,6 @@ export class Reactor {
     while(!this._dirty.empty()) {
       let incr = this._dirty.pop();
       incr._recompute(this);
-      incr._notify(this);
       incr._dirty = false;
     }
   }
@@ -195,19 +200,21 @@ export class Reactor {
 }
 
 class Then<T> extends Incr<T> {
-  _prev: Incr<any>;
+  _input: Incr<any>;
+  _input_value: any;
   _f: (v: any) => Incr<T>;
   _last: null | Incr<T>;
   _value: undefined | T;
   _height: number;
 
-  constructor(prev: Incr<any>, f: (v: any) => Incr<T>) {
+  constructor(input: Incr<any>, f: (v: any) => Incr<T>) {
     super();
-    this._prev = prev;
+    this._input = input;
+    this._input_value = undefined;
     this._f = f;
     this._last = null;
     this._value = undefined;
-    this._height = prev._height + 1;
+    this._height = input._height + 1;
   }
 
   value() {
@@ -218,35 +225,50 @@ class Then<T> extends Incr<T> {
   }
 
   _activate() {
-    this._prev._subscribe(this);
+    this._input._subscribe(this);
     if(this._last !== null) {
       this._last._subscribe(this);
     }
   }
 
   _deactivate() {
-    this._prev._unsubscribe(this);
+    this._input._unsubscribe(this);
     if(this._last !== null) {
       this._last._unsubscribe(this);
     }
   }
 
   _recompute(reactor: Reactor): void {
-    const next = this._f(this._prev.value());
-    this._value = next.value();
+    let next = this._last;
+    let was_active = true;
+    let input_value = this._input.value();
+    if(next === null || input_value !== this._input_value) {
+      this._input_value = input_value;
+      next = this._f(input_value);
+      const was_active = next._active();
+      if(next !== this._last) {
+        if(this._last !== null) {
+          this._last._unsubscribe(this);
+        }
+        next._subscribe(this);
+      }
+      this._last = next;
+    }
+    if(next === null) {
+      throw new Error("impossible");
+    }
     this._height = Math.max(
       this._height,
-      Math.max(this._prev._height, next._height) + 1,
+      Math.max(this._input._height, next._height) + 1,
     );
-    if(next === this._last) {
-      return
+    if(was_active) {
+      this._value = next.value();
+      this._notify(reactor)
+    } else {
+      // This node wasn't previously part of the dependency graph.
+      // Schedule it to be run. When it completes, it will schedule
+      // us again.
+      next._set_dirty(reactor);
     }
-    if(this._active()) {
-      if(this._last !== null) {
-        this._last._unsubscribe(this);
-      }
-      next._subscribe(this);
-    }
-    this._last = next;
   }
 }
