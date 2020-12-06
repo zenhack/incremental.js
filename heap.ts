@@ -1,26 +1,60 @@
 
-function iparent(i: number): number { return (i - 1) >> 1 }
-function ileft(i: number): number { return (i << 1) + 1 }
-function iright(i: number): number { return (i << 1) + 2 }
-
 export class Heap<T> {
+  // A binary heap (priority queue) containing values of type <T>.
+
   private _before: (x: T, y: T) => boolean
   private _items: T[];
 
   constructor(before: (x: T, y: T) => boolean) {
+    // before is a function used to determine the relative priority
+    // of two elements. if `before(x, y)`, then `x` should take
+    // priority over `y`.
+
     this._items = [];
     this._before = before;
   }
 
   empty(): boolean {
-    return this._items.length === 0;
+    // Returns whether the heap is empty.
+    //
+    // Running time O(1).
+
+    return this.size() === 0;
+  }
+
+  size(): number {
+    // Returns thenumber of items int he heap.
+    //
+    // Running time O(1).
+
+    return this._items.length;
   }
 
   push(item: T): void {
+    // Add an item to the heap.
+    //
+    // Running time O(log(n)).
+
     this._items.push(item);
     this._percolate_up(this._items.length - 1);
   }
 
+  peek(): T {
+    // Return the highest priority item in the heap, without returning
+    // it. Throws an exception if the heap is empty.
+    //
+    // Running time O(1).
+
+    if(this.empty()) {
+      throw new Error("Empty heap");
+    }
+    return this._items[0];
+  }
+
+  // Remove and return the highest priority item in the heap.
+  // Throws an exception if the heap is empty.
+  //
+  // Running time O(log(n)).
   pop(): T {
     if(this.empty()) {
       throw new Error("Empty heap");
@@ -70,3 +104,8 @@ export class Heap<T> {
     this._items[j] = tmp;
   }
 }
+
+// compute indicies of parent & left & right children.
+function iparent(i: number): number { return (i - 1) >> 1 }
+function ileft(i: number): number { return (i << 1) + 1 }
+function iright(i: number): number { return (i << 1) + 2 }
