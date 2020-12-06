@@ -2,6 +2,55 @@ import { Reactor } from '../inc.js';
 import * as assert from 'assert';
 
 describe("incr", function() {
+  describe("watchers", function() {
+    it("Should trigger when vars change", function() {
+      const r = new Reactor();
+      const v = r.newVar(0);
+      let last = 0;
+      const obs = v.observe().watch(x => {
+        last = x;
+        return true;
+      })
+      v.set(2);
+      r.stabilize();
+      assert.equal(last, 2);
+      v.set(4)
+      r.stabilize();
+      assert.equal(last, 4);
+    });
+    it("Should be disabled when they return false", function() {
+      const r = new Reactor();
+      let last = 0;
+      const v = r.newVar(last);
+      v.observe().watch(x => {
+        last = x;
+        return false;
+      });
+      v.set(1);
+      r.stabilize();
+      assert.equal(last, 1);
+      v.set(2);
+      r.stabilize();
+      assert.equal(last, 1);
+    });
+  });
+  describe(".map()", function() {
+    it("should trigger observers", function() {
+      const r = new Reactor();
+      let last = 0;
+      const v = r.newVar(last);
+      v.map(x => x + 1).observe().watch(x => {
+        last = x;
+        return true;
+      });
+      v.set(1);
+      r.stabilize();
+      assert.equal(last, 2);
+      v.set(7);
+      r.stabilize();
+      assert.equal(last, 8);
+    });
+  });
   it("should compute the right value", function() {
     const r = new Reactor();
     const x = r.newVar(1);
