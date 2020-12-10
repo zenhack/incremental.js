@@ -100,7 +100,7 @@ zv.set(1)
 // But! since neither x or y changed, `x * y = 4 * 2 = 8` will not
 // be recomputed this time. Instead, the existing value `8` will be
 // used, and only 8 + z = 8 + 1 = 9 must be computed.
-r.stabilize
+r.stabilize()
 ```
 
 TODO: more examples & complete documentation, talk about `.then()`, the
