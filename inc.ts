@@ -252,7 +252,7 @@ class Then<T> extends Incr<T> {
     if(next === null || input_value !== this._input_value) {
       this._input_value = input_value;
       next = this._f(input_value);
-      const was_active = next._active();
+      was_active = next._active();
       if(next !== this._last) {
         if(this._last !== null) {
           this._last._unsubscribe(this);
