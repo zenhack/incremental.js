@@ -4,7 +4,7 @@ import { impossible } from './util.js';
 // A Text node in the VDom
 export type VText = { text: string }
 
-export type EventHandler = () => void
+export type EventHandler = (e: Event) => void
 
 // An attribute list.
 export type VAttrs = {[k: string]: string}

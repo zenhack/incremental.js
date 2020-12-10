@@ -4,9 +4,9 @@ import * as inc from './inc.js';
 
 export class Reactor extends inc.Reactor {
   event(handler: EventHandler): EventHandler {
-    return () => {
+    return (e) => {
       try {
-        handler();
+        handler(e);
       } finally {
         this.stabilize();
       }
