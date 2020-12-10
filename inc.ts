@@ -31,6 +31,10 @@ export abstract class Incr<T> {
     return this.then(x => just(f(x)));
   }
 
+  map2<A, B>(other: Incr<A>, f: (x: T, y: A) => B): Incr<B> {
+    return this.then(x => other.map(y => f(x, y)));
+  }
+
   _subscribe(sub: Incr<any>) {
     this._subscribers[sub._id] = sub;
     this._rc++
