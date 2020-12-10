@@ -1,17 +1,22 @@
 
 import { diff, patch, h, text, makeNode, VNode, EventHandler } from './mvd.js';
-import { Reactor, Incr } from './inc.js';
+import * as inc from './inc.js';
 
-function update(r: Reactor, handler: EventHandler): EventHandler {
-  return () => {
-    handler();
-    r.stabilize();
+export class Reactor extends inc.Reactor {
+  event(handler: EventHandler): EventHandler {
+    return () => {
+      try {
+        handler();
+      } finally {
+        this.stabilize();
+      }
+    }
   }
 }
 
-type App = (r: Reactor) => Incr<VNode>;
+export type App = (r: Reactor) => inc.Incr<VNode>;
 
-function runApp(elt: Element, app: App): void {
+export function runApp(elt: Element, app: App): void {
   const r = new Reactor();
   const view = app(r);
   let dom: ChildNode | null = null;
@@ -39,26 +44,3 @@ function runApp(elt: Element, app: App): void {
   });
   r.stabilize();
 }
-
-function app(r: Reactor): Incr<VNode> {
-  const ctr = r.newVar(0);
-
-  const btn = (name: string, onclick: EventHandler): VNode => {
-    return h('button', { onclick: update(r, onclick) }, [text(name)]);
-  }
-
-  const addBtn = btn("+", () => ctr.modify(x => x + 1))
-  const subBtn = btn("-", () => ctr.modify(x => x - 1))
-
-  return ctr.map(value => {
-    return(h('div', {}, [addBtn, text(value.toString()), subBtn]));
-  });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const elt = document.getElementById("app");
-  if(!elt) {
-    throw new Error("did not find app element");
-  }
-  runApp(elt, app);
-});
