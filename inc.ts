@@ -3,9 +3,9 @@ import { Heap } from './heap.js';
 let nextId = 0;
 
 abstract class Incr<T> {
-  _id: number;
-  _subscribers: {[k: number]: Incr<any>};
-  _rc: number;
+  private _id: number;
+  private _subscribers: {[k: number]: Incr<any>};
+  private _rc: number;
   _height: number;
   _dirty: boolean;
 
@@ -18,6 +18,9 @@ abstract class Incr<T> {
   }
 
   abstract value(): T;
+  abstract _recompute(_reactor: Reactor): void;
+  abstract _activate(): void;
+  abstract _deactivate(): void;
 
   then<A>(f: (v: T) => Incr<A>): Incr<A> {
     return new Then<A>(this, f);
@@ -63,10 +66,6 @@ abstract class Incr<T> {
   observe(): Obs<T> {
     return new Obs(this);
   }
-
-  _recompute(_reactor: Reactor): void {}
-  _activate(): void {}
-  _deactivate(): void {}
 }
 
 class Obs<T> extends Incr<T> {
@@ -110,6 +109,9 @@ class Obs<T> extends Incr<T> {
     this._watchers = new_watchers;
     this._notify(reactor);
   }
+
+  _activate() {}
+  _deactivate() {}
 }
 
 // Convert a plain value into an Incr which never changes.
@@ -132,6 +134,9 @@ class Const<T> extends Incr<T> {
   _recompute(reactor: Reactor) {
     this._notify(reactor);
   }
+
+  _activate() {}
+  _deactivate() {}
 }
 
 class Var<T> extends Incr<T> {
@@ -171,6 +176,8 @@ class Var<T> extends Incr<T> {
       this._set_dirty(this._reactor);
     }
   }
+
+  _deactivate() {}
 }
 
 export class Reactor {
