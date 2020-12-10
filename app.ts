@@ -1,5 +1,5 @@
 
-import { diff, patch, h, text, makeNode, VNode, EventHandler } from './mvd.js';
+import { diff, patch, makeNode, VNode, EventHandler } from './mvd.js';
 import * as inc from './inc.js';
 
 export class Reactor extends inc.Reactor {
