@@ -1,4 +1,5 @@
 import { Heap } from './heap.js';
+import { Optional } from './optional.js';
 
 let nextId = 0;
 
@@ -208,40 +209,40 @@ export class Reactor {
 
 class Then<A, B> extends Incr<B> {
   _input: Incr<A>;
-  _input_value: undefined | A;
+  _input_value: Optional<A>;
   _f: (v: A) => Incr<B>;
-  _last: null | Incr<B>;
-  _value: undefined | B;
+  _last: Optional<Incr<B>>;
+  _value: Optional<B>;
   _height: number;
 
   constructor(input: Incr<A>, f: (v: A) => Incr<B>) {
     super();
     this._input = input;
-    this._input_value = undefined;
+    this._input_value = null;
     this._f = f;
     this._last = null;
-    this._value = undefined;
+    this._value = null;
     this._height = input._height + 1;
   }
 
-  value() {
-    if(this._value === undefined) {
-      throw new Error("Value is undefined; comptue it first.");
+  value(): B {
+    if(this._value === null) {
+      throw new Error("Value is not ready; comptue it first.");
     }
-    return this._value;
+    return this._value.some;
   }
 
-  _activate() {
+  _activate(): void {
     this._input._subscribe(this);
     if(this._last !== null) {
-      this._last._subscribe(this);
+      this._last.some._subscribe(this);
     }
   }
 
-  _deactivate() {
+  _deactivate(): void {
     this._input._unsubscribe(this);
     if(this._last !== null) {
-      this._last._unsubscribe(this);
+      this._last.some._unsubscribe(this);
     }
   }
 
@@ -249,15 +250,17 @@ class Then<A, B> extends Incr<B> {
     let next = this._last;
     let was_active = true;
     let input_value = this._input.value();
-    if(next === null || input_value !== this._input_value) {
-      this._input_value = input_value;
-      next = this._f(input_value);
-      was_active = next._active();
+    if(next === null
+        || this._input_value === null
+        || input_value !== this._input_value.some) {
+      this._input_value = { some: input_value };
+      next = { some: this._f(input_value) };
+      was_active = next.some._active();
       if(next !== this._last) {
         if(this._last !== null) {
-          this._last._unsubscribe(this);
+          this._last.some._unsubscribe(this);
         }
-        next._subscribe(this);
+        next.some._subscribe(this);
       }
       this._last = next;
     }
@@ -266,16 +269,16 @@ class Then<A, B> extends Incr<B> {
     }
     this._height = Math.max(
       this._height,
-      Math.max(this._input._height, next._height) + 1,
+      Math.max(this._input._height, next.some._height) + 1,
     );
     if(was_active) {
-      this._value = next.value();
+      this._value = { some: next.some.value() };
       this._notify(reactor)
     } else {
       // This node wasn't previously part of the dependency graph.
       // Schedule it to be run. When it completes, it will schedule
       // us again.
-      next._set_dirty(reactor);
+      next.some._set_dirty(reactor);
     }
   }
 }
