@@ -105,3 +105,5 @@ r.stabilize
 
 TODO: more examples & complete documentation, talk about `.then()`, the
 `app` module for integration, etc.
+
+[incremental]: https://opensource.janestreet.com/incremental/
