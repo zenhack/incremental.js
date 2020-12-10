@@ -47,7 +47,7 @@ import { Reactor } from 'inc';
 // compute a simple expression, the normal way. The arguments and
 // return value are plain old numbers.
 function computeNormally(x, y, z) {
-    return (x + y) * z
+    return (x * y) + z
 }
 
 // compute the same thing, but incrementally. This time, the arguments
