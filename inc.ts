@@ -3,7 +3,7 @@ import { Optional } from './optional.js';
 
 let nextId = 0;
 
-abstract class Incr<T> {
+export abstract class Incr<T> {
   private _id: number;
   private _subscribers: {[k: number]: Incr<any>};
   private _rc: number;
@@ -18,7 +18,7 @@ abstract class Incr<T> {
     this._dirty = false;
   }
 
-  abstract value(): T;
+  abstract get(): T;
   abstract _recompute(_reactor: Reactor): void;
   abstract _activate(): void;
   abstract _deactivate(): void;
@@ -85,8 +85,8 @@ class Obs<T> extends Incr<T> {
     this._incr._unsubscribe(this);
   }
 
-  value(): T {
-    return this._incr.value();
+  get(): T {
+    return this._incr.get();
   }
 
   watch(f: (v: T) => boolean): void {
@@ -95,7 +95,7 @@ class Obs<T> extends Incr<T> {
 
   _recompute(reactor: Reactor): void {
     this._height = this._incr._height + 1;
-    const v = this.value();
+    const v = this.get();
     let new_watchers = [];
     for(let i = 0; i < this._watchers.length; i++) {
       const f = this._watchers[i];
@@ -128,7 +128,7 @@ class Const<T> extends Incr<T> {
     this._value = value;
   }
 
-  value(): T {
+  get(): T {
     return this._value;
   }
 
@@ -140,7 +140,7 @@ class Const<T> extends Incr<T> {
   _deactivate() {}
 }
 
-class Var<T> extends Incr<T> {
+export class Var<T> extends Incr<T> {
   _reactor: Reactor;
   _value: T;
   _modified: boolean;
@@ -152,8 +152,12 @@ class Var<T> extends Incr<T> {
     this._modified = true;
   }
 
-  value(): T {
+  get(): T {
     return this._value;
+  }
+
+  modify(f: (v: T) => T): void {
+    this.set(f(this.get()));
   }
 
   set(value: T) {
@@ -225,7 +229,7 @@ class Then<A, B> extends Incr<B> {
     this._height = input._height + 1;
   }
 
-  value(): B {
+  get(): B {
     if(this._value === null) {
       throw new Error("Value is not ready; comptue it first.");
     }
@@ -249,7 +253,7 @@ class Then<A, B> extends Incr<B> {
   _recompute(reactor: Reactor): void {
     let next = this._last;
     let was_active = true;
-    let input_value = this._input.value();
+    let input_value = this._input.get();
     if(next === null
         || this._input_value === null
         || input_value !== this._input_value.some) {
@@ -272,7 +276,7 @@ class Then<A, B> extends Incr<B> {
       Math.max(this._input._height, next.some._height) + 1,
     );
     if(was_active) {
-      this._value = { some: next.some.value() };
+      this._value = { some: next.some.get() };
       this._notify(reactor)
     } else {
       // This node wasn't previously part of the dependency graph.
