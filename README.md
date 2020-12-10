@@ -16,7 +16,7 @@ you can generate HTML with it like:
 
 ```javascript
 
-import { h, text, VNode, makeChild } from 'mvd';
+import { h, text, VNode, makeNode } from 'mvd';
 
 function render() {
     return h('a', { href: "https://example.com" }, [text("Hello, World!")]);
