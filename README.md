@@ -56,7 +56,7 @@ function computeNormally(x, y, z) {
 function computeIncrementally(xv, yv, zv) {
     // `a.map(f)` is like `f(a)`, but incremental (will only be re-computed
     // if `a` changes. `a.map2(b, f)` is like `f(a, b)`, but incremental
-    // will only be recomputed if `a` or `b` changes.
+    // (will only be recomputed if `a` or `b` changes).
     //
     // So this is a bit noisy, but it's doing the same computation
     // as the above, just incremental.
