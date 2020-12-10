@@ -23,7 +23,7 @@ abstract class Incr<T> {
   abstract _deactivate(): void;
 
   then<A>(f: (v: T) => Incr<A>): Incr<A> {
-    return new Then<A>(this, f);
+    return new Then<T, A>(this, f);
   }
 
   map<A>(f: (v: T) => A): Incr<A> {
@@ -206,15 +206,15 @@ export class Reactor {
   }
 }
 
-class Then<T> extends Incr<T> {
-  _input: Incr<any>;
-  _input_value: any;
-  _f: (v: any) => Incr<T>;
-  _last: null | Incr<T>;
-  _value: undefined | T;
+class Then<A, B> extends Incr<B> {
+  _input: Incr<A>;
+  _input_value: undefined | A;
+  _f: (v: A) => Incr<B>;
+  _last: null | Incr<B>;
+  _value: undefined | B;
   _height: number;
 
-  constructor(input: Incr<any>, f: (v: any) => Incr<T>) {
+  constructor(input: Incr<A>, f: (v: A) => Incr<B>) {
     super();
     this._input = input;
     this._input_value = undefined;
