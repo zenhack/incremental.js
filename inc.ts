@@ -305,10 +305,7 @@ class Then<A, B> extends Incr<B> {
   }
 
   get(): B {
-    if(this._value === null) {
-      throw new Error("Value is not ready; comptue it first.");
-    }
-    return this._value.some;
+    return notNull(this._value);
   }
 
   _activate(): void {
