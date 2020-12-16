@@ -1,8 +1,18 @@
-import { Reactor, just } from '../inc.js';
+import { Reactor } from '../inc.js';
 import * as assert from 'assert';
 
 describe("incr", function() {
   describe("watchers", function() {
+    it("Should trigger once on constants", function() {
+      const r = new Reactor();
+      let seen = 0;
+      r.const(4).observe().watch(value => {
+        seen = value;
+        return true;
+      })
+      r.stabilize();
+      assert.equal(seen, 4);
+    });
     it("Should trigger when vars change", function() {
       const r = new Reactor();
       const v = r.newVar(0);
@@ -67,7 +77,7 @@ describe("incr", function() {
       const r = new Reactor();
       const v = r.newVar(0);
       let last = 0;
-      v.then(x => just(x + 1)).observe().watch(x => {
+      v.then(x => r.const(x + 1)).observe().watch(x => {
         last = x;
         return true;
       })

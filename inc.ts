@@ -9,8 +9,10 @@ export abstract class Incr<T> {
   private _rc: number;
   _height: number;
   _dirty: boolean;
+  _reactor: Reactor;
 
-  constructor() {
+  constructor(r: Reactor) {
+    this._reactor = r;
     this._id = nextId++;
     this._subscribers = {};
     this._rc = 0;
@@ -19,16 +21,16 @@ export abstract class Incr<T> {
   }
 
   abstract get(): T;
-  abstract _recompute(_reactor: Reactor): void;
+  abstract _recompute(): void;
   abstract _activate(): void;
   abstract _deactivate(): void;
 
   then<A>(f: (v: T) => Incr<A>): Incr<A> {
-    return new Then<T, A>(this, f);
+    return new Then<T, A>(this._reactor, this, f);
   }
 
   map<A>(f: (v: T) => A): Incr<A> {
-    return this.then(x => just(f(x)));
+    return this.then(x => this._reactor.const(f(x)));
   }
 
   map2<A, B>(other: Incr<A>, f: (x: T, y: A) => B): Incr<B> {
@@ -55,21 +57,21 @@ export abstract class Incr<T> {
     return this._rc > 0;
   }
 
-  _notify(reactor: Reactor) {
+  _notify() {
     for(const i in this._subscribers) {
-      this._subscribers[i]._set_dirty(reactor)
+      this._subscribers[i]._set_dirty()
     }
   }
 
-  _set_dirty(reactor: Reactor) {
+  _set_dirty() {
     if(!this._dirty) {
       this._dirty = true;
-      reactor._add_dirty(this);
+      this._reactor._add_dirty(this);
     }
   }
 
   observe(): Obs<T> {
-    return new Obs(this);
+    return new Obs(this._reactor, this);
   }
 }
 
@@ -77,8 +79,8 @@ class Obs<T> extends Incr<T> {
   _incr: Incr<T>;
   _watchers: ((v: T) => boolean)[];
 
-  constructor(incr: Incr<T>) {
-    super();
+  constructor(r: Reactor, incr: Incr<T>) {
+    super(r);
     this._incr = incr;
     this._incr._subscribe(this);
     this._watchers = [];
@@ -97,7 +99,7 @@ class Obs<T> extends Incr<T> {
     this._watchers.push(f)
   }
 
-  _recompute(reactor: Reactor): void {
+  _recompute(): void {
     this._height = this._incr._height + 1;
     const v = this.get();
     let new_watchers = [];
@@ -112,23 +114,18 @@ class Obs<T> extends Incr<T> {
       }
     }
     this._watchers = new_watchers;
-    this._notify(reactor);
+    this._notify();
   }
 
   _activate() {}
   _deactivate() {}
 }
 
-// Convert a plain value into an Incr which never changes.
-export function just<T>(x: T): Incr<T> {
-  return new Const(x);
-}
-
 class Const<T> extends Incr<T> {
   _value: T;
 
-  constructor(value: T) {
-    super()
+  constructor(r: Reactor, value: T) {
+    super(r)
     this._value = value;
   }
 
@@ -136,22 +133,23 @@ class Const<T> extends Incr<T> {
     return this._value;
   }
 
-  _recompute(reactor: Reactor) {
-    this._notify(reactor);
+  _recompute() {
+    this._notify();
   }
 
-  _activate() {}
+  _activate() {
+    this._set_dirty();
+  }
+
   _deactivate() {}
 }
 
 export class Var<T> extends Incr<T> {
-  _reactor: Reactor;
   _value: T;
   _modified: boolean;
 
-  constructor(reactor: Reactor, value: T) {
-    super();
-    this._reactor = reactor;
+  constructor(r: Reactor, value: T) {
+    super(r);
     this._value = value;
     this._modified = true;
   }
@@ -171,18 +169,18 @@ export class Var<T> extends Incr<T> {
     this._value = value;
     this._modified = true;
     if(this._active()) {
-      this._set_dirty(this._reactor);
+      this._set_dirty();
     }
   }
 
-  _recompute(reactor: Reactor) {
+  _recompute() {
     this._modified = false;
-    this._notify(reactor);
+    this._notify();
   }
 
   _activate() {
     if(this._modified) {
-      this._set_dirty(this._reactor);
+      this._set_dirty();
     }
   }
 
@@ -198,6 +196,10 @@ export class Reactor {
     });
   }
 
+  const<T>(value: T): Incr<T> {
+    return new Const(this, value);
+  }
+
   _add_dirty(incr: Incr<any>) {
     this._dirty.push(incr);
   }
@@ -205,7 +207,7 @@ export class Reactor {
   stabilize() {
     while(!this._dirty.empty()) {
       let incr = this._dirty.pop();
-      incr._recompute(this);
+      incr._recompute();
       incr._dirty = false;
     }
   }
@@ -223,8 +225,8 @@ class Then<A, B> extends Incr<B> {
   _value: Optional<B>;
   _height: number;
 
-  constructor(input: Incr<A>, f: (v: A) => Incr<B>) {
-    super();
+  constructor(r: Reactor, input: Incr<A>, f: (v: A) => Incr<B>) {
+    super(r);
     this._input = input;
     this._input_value = null;
     this._f = f;
@@ -254,7 +256,7 @@ class Then<A, B> extends Incr<B> {
     }
   }
 
-  _recompute(reactor: Reactor): void {
+  _recompute(): void {
     let next = this._last;
     let was_active = true;
     let input_value = this._input.get();
@@ -281,12 +283,12 @@ class Then<A, B> extends Incr<B> {
     );
     if(was_active) {
       this._value = { some: next.some.get() };
-      this._notify(reactor)
+      this._notify()
     } else {
       // This node wasn't previously part of the dependency graph.
       // Schedule it to be run. When it completes, it will schedule
       // us again.
-      next.some._set_dirty(reactor);
+      next.some._set_dirty();
     }
   }
 }
