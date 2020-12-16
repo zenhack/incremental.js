@@ -6,18 +6,16 @@ let nextId = 0;
 export abstract class Incr<T> {
   private _id: number;
   private _subscribers: {[k: number]: Incr<any>};
-  private _rc: number;
+  private _rc: number = 0;
   _height: number;
-  _dirty: boolean;
+  _dirty: boolean = false;
   _reactor: Reactor;
 
   constructor(r: Reactor, height: number) {
     this._reactor = r;
     this._id = nextId++;
     this._subscribers = {};
-    this._rc = 0;
     this._height = height;
-    this._dirty = false;
   }
 
   abstract get(): T;
@@ -180,12 +178,11 @@ class Const<T> extends Incr<T> {
 
 export class Var<T> extends Incr<T> {
   _value: T;
-  _modified: boolean;
+  _modified: boolean = true;
 
   constructor(r: Reactor, value: T) {
     super(r, 0);
     this._value = value;
-    this._modified = true;
   }
 
   get(): T {
@@ -263,18 +260,15 @@ export class Reactor {
 
 class Then<A, B> extends Incr<B> {
   _input: Incr<A>;
-  _input_value: Optional<A>;
+  _input_value: Optional<A> = null;
   _f: (v: A) => Incr<B>;
-  _last: Optional<Incr<B>>;
-  _value: Optional<B>;
+  _last: Optional<Incr<B>> = null;
+  _value: Optional<B> = null;
 
   constructor(r: Reactor, input: Incr<A>, f: (v: A) => Incr<B>) {
     super(r, input._height + 1);
     this._input = input;
-    this._input_value = null;
     this._f = f;
-    this._last = null;
-    this._value = null;
   }
 
   get(): B {
