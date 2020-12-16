@@ -54,22 +54,20 @@ function computeNormally(x, y, z) {
 // are not plain numbers but _incremental_ numbers -- of type
 // Incr<number> in typescript. The result is also an Incr<number>.
 function computeIncrementally(xv, yv, zv) {
-    // `a.map(f)` is like `f(a)`, but incremental (will only be re-computed
-    // if `a` changes. `a.map2(b, f)` is like `f(a, b)`, but incremental
-    // (will only be recomputed if `a` or `b` changes).
-    //
-    // So this is a bit noisy, but it's doing the same computation
-    // as the above, just incremental.
-    return xv.map2(yv, (x, y) => x * y).map(xy => zv.map(z => xy + z)
+    // map2(a, b, f) is like f(a, b), but incremental (will only be
+    // re-computed if `a` or `b` changes. So this is a bit noisy, but
+    // it's doing the same computation as the above, just incremental.
+    const xyv = map2(xv, yv, (x, y) => x * y)
+    return map2(xyv, zv, (xy, z) => xy + z)
 }
 
 // Now the fun stuff! we create a Reactor, which manages the whole
 // computation, and some variables, with initial values.
 
 const r = new Reactor();
-xv = r.newVar(1);
-yv = r.newVar(2);
-zv = r.newVar(3);
+xv = r.Var(1);
+yv = r.Var(2);
+zv = r.Var(3);
 
 // Generate the incrementalized result. The computation has not actually
 // been done at this point, we've only set it up.
