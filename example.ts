@@ -3,7 +3,7 @@ import { h, text, VNode, EventHandler } from './mvd.js';
 import { Reactor, Incr } from './inc.js';
 
 function app(r: Reactor): Incr<VNode> {
-  const ctr = r.newVar(0);
+  const ctr = r.Var(0);
 
   const btn = (name: string, onclick: EventHandler): VNode => {
     return h('button', { onclick: r.event(onclick) }, [text(name)]);

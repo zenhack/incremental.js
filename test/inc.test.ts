@@ -15,7 +15,7 @@ describe("incr", function() {
     });
     it("Should trigger when vars change", function() {
       const r = new Reactor();
-      const v = r.newVar(0);
+      const v = r.Var(0);
       let last = 0;
       v.observe().watch(x => {
         last = x;
@@ -30,7 +30,7 @@ describe("incr", function() {
     });
     it("Should trigger at least once.", function() {
       const r = new Reactor();
-      const v = r.newVar(0);
+      const v = r.Var(0);
       let seen = false;
       v.observe().watch(_x => {
         seen = true;
@@ -42,7 +42,7 @@ describe("incr", function() {
     it("Should be disabled when they return false", function() {
       const r = new Reactor();
       let last = 0;
-      const v = r.newVar(last);
+      const v = r.Var(last);
       v.observe().watch(x => {
         last = x;
         return false;
@@ -59,7 +59,7 @@ describe("incr", function() {
     it("should trigger observers", function() {
       const r = new Reactor();
       let last = 0;
-      const v = r.newVar(last);
+      const v = r.Var(last);
       v.map(x => x + 1).observe().watch(x => {
         last = x;
         return true;
@@ -75,7 +75,7 @@ describe("incr", function() {
   describe(".then()", function() {
     it("should trigger observers", function() {
       const r = new Reactor();
-      const v = r.newVar(0);
+      const v = r.Var(0);
       let last = 0;
       v.then(x => r.const(x + 1)).observe().watch(x => {
         last = x;
@@ -92,8 +92,8 @@ describe("incr", function() {
   describe("misc", function() {
     it("Should compute the right value for a slightly more complicated example", function() {
       const r = new Reactor();
-      const x = r.newVar(1);
-      const y = r.newVar(2);
+      const x = r.Var(1);
+      const y = r.Var(2);
       const z = x.then(x => y.map(y => x + y))
       const obs = z.observe();
       let expected = 3;

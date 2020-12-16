@@ -247,7 +247,7 @@ export class Reactor {
     }
   }
 
-  newVar<T>(value: T): Var<T> {
+  Var<T>(value: T): Var<T> {
     return new Var(this, value);
   }
 
