@@ -9,6 +9,7 @@ export type EventHandler = (e: Event) => void
 // An attribute list.
 export type VAttrs = {[k: string]: string}
 export type VEvents = {[k: string]: EventHandler}
+export type VProperties = {[k: string]: string | EventHandler}
 
 // An element in the VDom.
 export type VElt = {
