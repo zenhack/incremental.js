@@ -1,5 +1,5 @@
 import { Heap } from './heap.js';
-import { Optional } from './optional.js';
+import { Optional, notNull } from './optional.js';
 
 let nextId = 0;
 
@@ -28,7 +28,7 @@ export abstract class Incr<T> {
   }
 
   map<A>(f: (v: T) => A): Incr<A> {
-    return this.then(x => this._reactor.const(f(x)));
+    return new Map(this._reactor, this, f);
   }
 
   apply<A>(f: Incr<(v: T) => A>): Incr<A> {
@@ -254,6 +254,39 @@ export class Reactor {
       } finally {
         this.stabilize();
       }
+    }
+  }
+}
+
+class Map<A, B> extends Incr<B> {
+  private _input: Incr<A>;
+  private _f: (v: A) => B;
+  private _value: Optional<B> = null;
+
+  constructor(r: Reactor, input: Incr<A>, f: (v: A) => B) {
+    super(r, input._height + 1);
+    this._input = input;
+    this._f = f;
+  }
+
+  get(): B {
+    return notNull(this._value);
+  }
+
+  _activate(): void {
+    this._input._subscribe(this);
+  }
+
+  _deactivate(): void {
+    this._input._unsubscribe(this);
+  }
+
+  _recompute(): void {
+    const last = this._value;
+    const next = this._f(this._input.get());
+    if(last === null || last.some !== next) {
+      this._value = { some: next };
+      this._notify();
     }
   }
 }
