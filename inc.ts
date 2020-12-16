@@ -8,6 +8,7 @@ export abstract class Incr<T> {
   private _subscribers: {[k: number]: Incr<any>};
   private _rc: number = 0;
   _height: number;
+  _scheduled_height: number = 0;
   _dirty: boolean = false;
   _reactor: Reactor;
 
@@ -24,7 +25,7 @@ export abstract class Incr<T> {
   abstract _deactivate(): void;
 
   then<A>(f: (v: T) => Incr<A>): Incr<A> {
-    return new Then<T, A>(this._reactor, this, f);
+    return flatten(this.map(f));
   }
 
   map<A>(f: (v: T) => A): Incr<A> {
@@ -40,6 +41,9 @@ export abstract class Incr<T> {
     this._rc++
     if(this._rc === 1) {
       this._activate();
+    }
+    if(this._active()) {
+      sub._set_min_height(this._height + 1);
     }
   }
 
@@ -61,9 +65,19 @@ export abstract class Incr<T> {
     }
   }
 
+  _set_min_height(height: number) {
+    if(height > this._height) {
+      this._height = height;
+      for(const i in this._subscribers) {
+        this._subscribers[i]._set_min_height(height + 1);
+      }
+    }
+  }
+
   _set_dirty() {
     if(!this._dirty) {
       this._dirty = true;
+      this._scheduled_height = this._height;
       this._reactor._add_dirty(this);
     }
   }
@@ -75,6 +89,10 @@ export abstract class Incr<T> {
 
 export function apply<A, B>(f: Incr<(v: A) => B>, x: Incr<A>): Incr<B> {
   return x.apply(f)
+}
+
+export function flatten<A>(x: Incr<Incr<A>>): Incr<A> {
+  return new Flatten(x._reactor, x);
 }
 
 export function map<A, B>(a: Incr<A>, fn: (a: A) => B): Incr<B> {
@@ -132,7 +150,6 @@ class Obs<T> extends Incr<T> {
   }
 
   _recompute(): void {
-    this._height = this._incr._height + 1;
     const v = this.get();
     let new_watchers = [];
     for(let i = 0; i < this._watchers.length; i++) {
@@ -223,7 +240,7 @@ export class Reactor {
 
   constructor() {
     this._dirty = new Heap((x, y) => {
-      return x._height < y._height
+      return x._scheduled_height < y._scheduled_height
     });
   }
 
@@ -238,8 +255,15 @@ export class Reactor {
   stabilize() {
     while(!this._dirty.empty()) {
       let incr = this._dirty.pop();
-      incr._recompute();
       incr._dirty = false;
+      console.log(incr);
+      if(incr._scheduled_height < incr._height) {
+        // this one has been de-prioritized since being scheduled;
+        // throw it back in the heap for later.
+        incr._set_dirty();
+        continue;
+      }
+      incr._recompute();
     }
   }
 
@@ -291,70 +315,65 @@ class Map<A, B> extends Incr<B> {
   }
 }
 
-class Then<A, B> extends Incr<B> {
-  _input: Incr<A>;
-  _input_value: Optional<A> = null;
-  _f: (v: A) => Incr<B>;
-  _last: Optional<Incr<B>> = null;
-  _value: Optional<B> = null;
+class Flatten<A> extends Incr<A> {
+  private _input: Incr<Incr<A>>;
+  private _input_value: Optional<Incr<A>> = null;
+  private _value: Optional<A> = null;
 
-  constructor(r: Reactor, input: Incr<A>, f: (v: A) => Incr<B>) {
+  constructor(r: Reactor, input: Incr<Incr<A>>) {
     super(r, input._height + 1);
     this._input = input;
-    this._f = f;
   }
 
-  get(): B {
+  get(): A {
     return notNull(this._value);
   }
 
   _activate(): void {
     this._input._subscribe(this);
-    if(this._last !== null) {
-      this._last.some._subscribe(this);
+    if(this._input_value !== null) {
+      this._input_value.some._subscribe(this);
     }
   }
 
   _deactivate(): void {
     this._input._unsubscribe(this);
-    if(this._last !== null) {
-      this._last.some._unsubscribe(this);
+    if(this._input_value !== null) {
+      this._input_value.some._unsubscribe(this);
     }
   }
 
   _recompute(): void {
-    let next = this._last;
-    let was_active = true;
-    let input_value = this._input.get();
-    if(next === null
-        || this._input_value === null
-        || input_value !== this._input_value.some) {
-      this._input_value = { some: input_value };
-      next = { some: this._f(input_value) };
-      was_active = next.some._active();
-      if(next !== this._last) {
-        if(this._last !== null) {
-          this._last.some._unsubscribe(this);
-        }
-        next.some._subscribe(this);
+    const last = this._input_value;
+    const next = this._input.get();
+    if(last !== null && last.some === next) {
+      const value = next.get();
+      if(this._value === null || this._value.some !== value) {
+        this._value = { some: value }
+        this._notify();
       }
-      this._last = next;
+      return;
     }
-    if(next === null) {
-      throw new Error("impossible");
+
+    const wasActive = next._active();
+
+    if(last !== null) {
+      last.some._unsubscribe(this);
     }
-    this._height = Math.max(
-      this._height,
-      Math.max(this._input._height, next.some._height) + 1,
-    );
-    if(was_active) {
-      this._value = { some: next.some.get() };
-      this._notify()
-    } else {
-      // This node wasn't previously part of the dependency graph.
-      // Schedule it to be run. When it completes, it will schedule
-      // us again.
-      next.some._set_dirty();
+    next._subscribe(this);
+    this._input_value = { some: next };
+
+    // Run us again. On our next run, we should hit the scenario above where
+    // next is itself unchanged (but its value may be updated).
+    this._set_dirty();
+
+    if(!wasActive) {
+      // Next wasn't previously active, so it needs to be scheduled.
+      // If it *was* previously active, then either:
+      //
+      // 1. It has already run and is up to date, or
+      // 2. It is still in the queue, and will be run eventually.
+      next._set_dirty();
     }
   }
 }
