@@ -6,7 +6,7 @@ typescript/javascript libraries:
 
 ...as well as a bit of glue code to tie them together.
 
-These libraries are *tiny*; their sum total is less than 800 lines of
+These libraries are *tiny*; their sum total is less than 1000 lines of
 typescript, and they have *zero* runtime dependencies.
 
 # MVD: Minimal VDom
