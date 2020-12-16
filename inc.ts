@@ -75,23 +75,23 @@ export abstract class Incr<T> {
   }
 }
 
-function apply<A, B>(f: Incr<(v: A) => B>, x: Incr<A>): Incr<B> {
+export function apply<A, B>(f: Incr<(v: A) => B>, x: Incr<A>): Incr<B> {
   return x.apply(f)
 }
 
-function map<A, B>(a: Incr<A>, fn: (a: A) => B): Incr<B> {
+export function map<A, B>(a: Incr<A>, fn: (a: A) => B): Incr<B> {
   return a.map(fn);
 }
 
-function map2<A, B, C>(a: Incr<A>, b: Incr<B>, fn: (x: A, y: B) => C): Incr<C> {
+export function map2<A, B, C>(a: Incr<A>, b: Incr<B>, fn: (x: A, y: B) => C): Incr<C> {
   return apply(a.map((a: A) => (b: B) => fn(a, b)), b);
 }
 
-function map3<A, B, C, D>(a: Incr<A>, b: Incr<B>, c: Incr<C>, fn: (a: A, b: B, c: C) => D): Incr<D> {
+export function map3<A, B, C, D>(a: Incr<A>, b: Incr<B>, c: Incr<C>, fn: (a: A, b: B, c: C) => D): Incr<D> {
   return apply<C, D>(map2<A, B, (v: C) => D>(a, b, (a, b) => c => fn(a, b, c)), c);
 }
 
-function map4<A, B, C, D, E>(
+export function map4<A, B, C, D, E>(
   a: Incr<A>,
   b: Incr<B>,
   c: Incr<C>,
@@ -100,7 +100,7 @@ function map4<A, B, C, D, E>(
     return apply<D, E>(map3<A, B, C, (v: D) => E>(a, b, c, (a, b, c) => d => fn(a, b, c, d)), d)
 }
 
-function map5<A, B, C, D, E, F>(
+export function map5<A, B, C, D, E, F>(
   a: Incr<A>,
   b: Incr<B>,
   c: Incr<C>,
