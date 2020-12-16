@@ -1,20 +1,8 @@
 
 import { diff, patch, makeNode, VNode, EventHandler } from './mvd.js';
-import * as inc from './inc.js';
+import { Incr, Reactor } from './inc.js';
 
-export class Reactor extends inc.Reactor {
-  event(handler: EventHandler): EventHandler {
-    return (e) => {
-      try {
-        handler(e);
-      } finally {
-        this.stabilize();
-      }
-    }
-  }
-}
-
-export type App = (r: Reactor) => inc.Incr<VNode>;
+export type App = (r: Reactor) => Incr<VNode>;
 
 export function runApp(elt: Element, app: App): void {
   const r = new Reactor();

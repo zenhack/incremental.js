@@ -250,6 +250,16 @@ export class Reactor {
   newVar<T>(value: T): Var<T> {
     return new Var(this, value);
   }
+
+  event<A extends any[], B>(f: (...args: A) => B): (...args: A) => B {
+    return (...args) => {
+      try {
+        return f(...args)
+      } finally {
+        this.stabilize();
+      }
+    }
+  }
 }
 
 class Then<A, B> extends Incr<B> {

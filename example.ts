@@ -1,6 +1,6 @@
-import { Reactor, App, runApp } from './app.js';
+import { App, runApp } from './app.js';
 import { h, text, VNode, EventHandler } from './mvd.js';
-import { Incr } from './inc.js';
+import { Reactor, Incr } from './inc.js';
 
 function app(r: Reactor): Incr<VNode> {
   const ctr = r.newVar(0);
