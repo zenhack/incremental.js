@@ -11,12 +11,12 @@ export abstract class Incr<T> {
   _dirty: boolean;
   _reactor: Reactor;
 
-  constructor(r: Reactor) {
+  constructor(r: Reactor, height: number) {
     this._reactor = r;
     this._id = nextId++;
     this._subscribers = {};
     this._rc = 0;
-    this._height = 0;
+    this._height = height;
     this._dirty = false;
   }
 
@@ -115,11 +115,10 @@ class Obs<T> extends Incr<T> {
   _watchers: ((v: T) => boolean)[];
 
   constructor(r: Reactor, incr: Incr<T>) {
-    super(r);
+    super(r, incr._height + 1);
     this._incr = incr;
     this._incr._subscribe(this);
     this._watchers = [];
-    this._height = this._incr._height + 1;
   }
 
   unobserve(): void {
@@ -160,7 +159,7 @@ class Const<T> extends Incr<T> {
   _value: T;
 
   constructor(r: Reactor, value: T) {
-    super(r)
+    super(r, 0)
     this._value = value;
   }
 
@@ -184,7 +183,7 @@ export class Var<T> extends Incr<T> {
   _modified: boolean;
 
   constructor(r: Reactor, value: T) {
-    super(r);
+    super(r, 0);
     this._value = value;
     this._modified = true;
   }
@@ -268,16 +267,14 @@ class Then<A, B> extends Incr<B> {
   _f: (v: A) => Incr<B>;
   _last: Optional<Incr<B>>;
   _value: Optional<B>;
-  _height: number;
 
   constructor(r: Reactor, input: Incr<A>, f: (v: A) => Incr<B>) {
-    super(r);
+    super(r, input._height + 1);
     this._input = input;
     this._input_value = null;
     this._f = f;
     this._last = null;
     this._value = null;
-    this._height = input._height + 1;
   }
 
   get(): B {
