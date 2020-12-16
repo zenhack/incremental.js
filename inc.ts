@@ -33,8 +33,8 @@ export abstract class Incr<T> {
     return this.then(x => this._reactor.const(f(x)));
   }
 
-  map2<A, B>(other: Incr<A>, f: (x: T, y: A) => B): Incr<B> {
-    return this.then(x => other.map(y => f(x, y)));
+  apply<A>(f: Incr<(v: T) => A>): Incr<A> {
+    return f.then<A>(f => this.map(f))
   }
 
   _subscribe(sub: Incr<any>) {
@@ -73,6 +73,41 @@ export abstract class Incr<T> {
   observe(): Obs<T> {
     return new Obs(this._reactor, this);
   }
+}
+
+function apply<A, B>(f: Incr<(v: A) => B>, x: Incr<A>): Incr<B> {
+  return x.apply(f)
+}
+
+function map<A, B>(a: Incr<A>, fn: (a: A) => B): Incr<B> {
+  return a.map(fn);
+}
+
+function map2<A, B, C>(a: Incr<A>, b: Incr<B>, fn: (x: A, y: B) => C): Incr<C> {
+  return apply(a.map((a: A) => (b: B) => fn(a, b)), b);
+}
+
+function map3<A, B, C, D>(a: Incr<A>, b: Incr<B>, c: Incr<C>, fn: (a: A, b: B, c: C) => D): Incr<D> {
+  return apply<C, D>(map2<A, B, (v: C) => D>(a, b, (a, b) => c => fn(a, b, c)), c);
+}
+
+function map4<A, B, C, D, E>(
+  a: Incr<A>,
+  b: Incr<B>,
+  c: Incr<C>,
+  d: Incr<D>,
+  fn: (a: A, b: B, c: C, d: D) => E): Incr<E> {
+    return apply<D, E>(map3<A, B, C, (v: D) => E>(a, b, c, (a, b, c) => d => fn(a, b, c, d)), d)
+}
+
+function map5<A, B, C, D, E, F>(
+  a: Incr<A>,
+  b: Incr<B>,
+  c: Incr<C>,
+  d: Incr<D>,
+  e: Incr<E>,
+  fn: (a: A, b: B, c: C, d: D, e: E) => F): Incr<F> {
+    return apply<E, F>(map4<A, B, C, D, (v: E) => F>(a, b, c, d, (a, b, c, d) => e => fn(a, b, c, d, e)), e);
 }
 
 class Obs<T> extends Incr<T> {
