@@ -112,7 +112,7 @@ describe("incr", function() {
       assert.equal(seen, 2)
     });
     it("...and another", function() {
-      // This is meant to reproduce the dpeendency graph of a failure
+      // This is meant to reproduce the dependency graph of a failure
       // I(zenhack) saw in an app... but the test passes, so it wasn't
       // the issue. Still, it's another example.
       const r = new Reactor();
