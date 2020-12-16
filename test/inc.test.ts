@@ -1,4 +1,5 @@
 import { Reactor } from '../inc.js';
+import * as inc from '../inc.js';
 import * as assert from 'assert';
 
 describe("incr", function() {
@@ -109,6 +110,24 @@ describe("incr", function() {
       expected = 2;
       r.stabilize();
       assert.equal(seen, 2)
-    })
+    });
+    it("...and another", function() {
+      // This is meant to reproduce the dpeendency graph of a failure
+      // I(zenhack) saw in an app... but the test passes, so it wasn't
+      // the issue. Still, it's another example.
+      const r = new Reactor();
+      const a = r.Var('a');
+      const b = r.Var('b');
+      const cac = a.map(a => a + 'c').map(ac => 'c' + ac);
+      const bc = b.map(b => b + 'c');
+      const cacbc = inc.map2(cac, bc, (x, y) => x + y)
+      let value = "";
+      cacbc.observe().watch(x => {
+        value = x;
+        return false;
+      })
+      r.stabilize();
+      assert.equal(value, "cacbc");
+    });
   });
 });
