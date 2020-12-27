@@ -256,7 +256,6 @@ export class Reactor {
     while(!this._dirty.empty()) {
       let incr = this._dirty.pop();
       incr._dirty = false;
-      console.log(incr);
       if(incr._scheduled_height < incr._height) {
         // this one has been de-prioritized since being scheduled;
         // throw it back in the heap for later.
