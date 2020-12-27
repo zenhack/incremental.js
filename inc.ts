@@ -16,7 +16,7 @@ export abstract class Incr<T> {
     this._reactor = r;
     this._id = nextId++;
     this._subscribers = {};
-    this._height = height;
+    this._height = Math.max(height, r._alloc_height);
   }
 
   abstract get(): T;
@@ -236,6 +236,7 @@ export class Var<T> extends Incr<T> {
 }
 
 export class Reactor {
+  _alloc_height: number = 0;
   _dirty: Heap<Incr<any>>;
 
   constructor() {
@@ -262,8 +263,10 @@ export class Reactor {
         incr._set_dirty();
         continue;
       }
+      this._alloc_height = incr._height + 1;
       incr._recompute();
     }
+    this._alloc_height = 0;
   }
 
   Var<T>(value: T): Var<T> {
