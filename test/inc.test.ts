@@ -140,6 +140,57 @@ describe("incr", function() {
       r.stabilize();
       assert.equal(res.get(), 2);
     });
+    it("Should handle updates to dynamically chosen results", function() {
+      // This is like the above, except that our alternatives are variables,
+      // not constants, and we test to make sure than updating the alternatives
+      // propagates correctly.
+
+      const r = new Reactor();
+
+      const a = r.Var(1);
+      const b = r.Var(2);
+
+      const v = r.Var(false);
+
+      const res = v.then((v) => {
+        if(v) {
+          return a;
+        } else {
+          return b;
+        }
+      }).observe();
+
+      // Check the initial value.
+      r.stabilize();
+      assert.equal(res.get(), 2);
+
+      // Change the value of the active input.
+      b.set(3);
+      r.stabilize();
+      assert.equal(res.get(), 3);
+
+      // Switch to the other input.
+      v.set(true);
+      r.stabilize();
+      assert.equal(res.get(), 1);
+
+      // Switch back to the previous input.
+      v.set(false);
+      r.stabilize();
+      assert.equal(res.get(), 3);
+
+      // Change the inactive input, make sure the current value is
+      // unchanged.
+      a.set(8);
+      r.stabilize();
+      assert.equal(res.get(), 3);
+
+      // Now switch to the other input, and make sure the value is
+      // as we set it when it was inactive.
+      v.set(true);
+      r.stabilize();
+      assert.equal(res.get(), 8);
+    });
   });
   describe("misc", function() {
     it("Should compute the right value for a slightly more complicated example", function() {
