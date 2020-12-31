@@ -89,6 +89,57 @@ describe("incr", function() {
       r.stabilize();
       assert.equal(last, 6);
     })
+    it("Should handle switching between newly created results", function() {
+      const r = new Reactor();
+      const v = r.Var(false);
+      const res = v.then((v) => {
+        if(v) {
+          return r.const(1);
+        } else {
+          return r.const(2);
+        }
+      }).observe();
+
+      r.stabilize();
+      assert.equal(res.get(), 2);
+
+      v.set(true);
+      r.stabilize();
+      assert.equal(res.get(), 1);
+
+      v.set(false);
+      r.stabilize();
+      assert.equal(res.get(), 2);
+    });
+    it("Should handle switching between pre-existing results", function() {
+      // This is just like the test case above, except that we allocate the two
+      // possible result `Incr`s outside of then()'s argument, once.
+      const r = new Reactor();
+
+      const one = r.const(1);
+      const two = r.const(2);
+
+      const v = r.Var(false);
+
+      const res = v.then((v) => {
+        if(v) {
+          return one;
+        } else {
+          return two;
+        }
+      }).observe();
+
+      r.stabilize()
+      assert.equal(res.get(), 2);
+
+      v.set(true);
+      r.stabilize();
+      assert.equal(res.get(), 1);
+
+      v.set(false);
+      r.stabilize();
+      assert.equal(res.get(), 2);
+    });
   });
   describe("misc", function() {
     it("Should compute the right value for a slightly more complicated example", function() {
